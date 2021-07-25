@@ -32,9 +32,7 @@ namespace Catalog.Controllers
             var item = repository.GetItem(id);
 
             if (item is null)
-            {
                 return NotFound();
-            }
 
             return Ok(item.AsDTO());
         }
@@ -51,8 +49,25 @@ namespace Catalog.Controllers
             };
 
             repository.CreateItem(item);
-
             return CreatedAtAction(nameof(GetItem), new { id = item.Id }, item.AsDTO());
+        }
+
+        [HttpPut("{id}")]
+        public ActionResult<ItemDTO> UpdateItem(Guid id, UpdateItemDTO itemDTO)
+        {
+            var existingItem = repository.GetItem(id);
+
+            if (existingItem is null)
+                return NotFound();
+
+            Item updatedItem = existingItem with
+            {
+                Name = itemDTO.Name,
+                Price = itemDTO.Price
+            };
+
+            repository.UpdateItem(updatedItem);
+            return NoContent();
         }
     }
 }
