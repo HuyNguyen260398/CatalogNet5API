@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Catalog.DTOs;
 using Catalog.Entities;
 using Catalog.Repositories;
@@ -38,6 +37,22 @@ namespace Catalog.Controllers
             }
 
             return Ok(item.AsDTO());
+        }
+
+        [HttpPost]
+        public ActionResult<ItemDTO> CreateItem(CreateItemDTO itemDTO)
+        {
+            Item item = new()
+            {
+                Id = Guid.NewGuid(),
+                Name = itemDTO.Name,
+                Price = itemDTO.Price,
+                CreatedDate = DateTimeOffset.UtcNow
+            };
+
+            repository.CreateItem(item);
+
+            return CreatedAtAction(nameof(GetItem), new { id = item.Id }, item.AsDTO());
         }
     }
 }
