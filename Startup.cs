@@ -1,17 +1,16 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Net.Mime;
+using System.Text.Json;
 using Catalog.Repositories;
 using Catalog.Settings;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
@@ -44,14 +43,21 @@ namespace Catalog
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Catalog", Version = "v1" });
             });
 
+            var mongoDbSettings = Configuration.GetSection(nameof(MongoDbSettings)).Get<MongoDbSettings>();
             services.AddSingleton<IMongoClient>(serviceProvider =>
             {
-                var settings = Configuration.GetSection(nameof(MongoDbSettings)).Get<MongoDbSettings>();
-                return new MongoClient(settings.ConnectionString);
+                return new MongoClient(mongoDbSettings.ConnectionString);
             });
 
             //services.AddSingleton<IItemsRepository, InMemItemsRepository>();
             services.AddSingleton<IItemsRepository, MongoDbItemsRepository>();
+
+            services.AddHealthChecks()
+            .AddMongoDb(
+                mongoDbSettings.ConnectionString, 
+                name: "mongodb", 
+                timeout: TimeSpan.FromSeconds(3),
+                tags: new[] { "ready" });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -73,6 +79,30 @@ namespace Catalog
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+
+                // Check db is ready for serving request
+                endpoints.MapHealthChecks("/healthchecks/ready", new HealthCheckOptions {
+                    Predicate = (check) => check.Tags.Contains("ready"),
+                    ResponseWriter = async(context, report) =>
+                    {
+                        var result = JsonSerializer.Serialize( new {
+                            status = report.Status.ToString(),
+                            checks = report.Entries.Select(entry => new {
+                                name = entry.Key,
+                                status = entry.Value.Status.ToString(),
+                                exception = entry.Value.Exception != null ? entry.Value.Exception.Message : "none",
+                                duration = entry.Value.Duration.ToString()
+                            })
+                        });
+                        context.Response.ContentType = MediaTypeNames.Application.Json;
+                        await context.Response.WriteAsync(result);
+                    }
+                });
+
+                // Check service/site is fully up and running 
+                endpoints.MapHealthChecks("/healthchecks/live", new HealthCheckOptions {
+                    Predicate = (_) => false
+                });
             });
         }
     }
