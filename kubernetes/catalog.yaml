@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: catalog
-        image: huynguyen260398/lol_catalog:v1
+        image: huynguyen260398/lol_catalog:v2
         resources:
           limits:
             memory: "128Mi"
