@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Catalog.Api.Controllers;
-using Catalog.Api.DTOs;
+using Catalog.Api.Dtos;
 using Catalog.Api.Entities;
 using Catalog.Api.Repositories;
 using FluentAssertions;
@@ -53,6 +53,7 @@ namespace Catalog.UnitTests
             // Assert
             //Assert.IsType<OkObjectResult>(result);
             result.Should().BeOfType<OkObjectResult>();
+            // result.Should().BeEquivalentTo(expectedItem);
 
             // var actualItem = (result as OkObjectResult).Value as Item;
             // actualItem.Should().BeEquivalentTo(
@@ -76,6 +77,7 @@ namespace Catalog.UnitTests
 
             // Assert
             result.Should().BeOfType<OkObjectResult>();
+            // result.Should().BeEquivalentTo(expectedItems);
 
             // var actualItems = (result as OkObjectResult).Value as Item;
             // actualItems.Should().BeEquivalentTo(
@@ -88,11 +90,12 @@ namespace Catalog.UnitTests
         public async Task CreateItemAsync_WithItemToCreate_ReturnCreatedItem()
         {
             // Arrange
-            var itemToCreate = new CreateItemDTO()
-            {
-                Name = Guid.NewGuid().ToString(),
-                Price = random.Next(1000)
-            };
+            var itemToCreate = new CreateItemDto
+            (
+                Guid.NewGuid().ToString(),
+                Guid.NewGuid().ToString(),
+                random.Next(1000)
+            );
 
             var controller = new ItemsController(repositoryStub.Object, loggerStub.Object);
 
@@ -119,11 +122,12 @@ namespace Catalog.UnitTests
             repositoryStub.Setup(repo => repo.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(existingItem);
 
             var itemId = existingItem.Id;
-            var itemToUpdate = new UpdateItemDTO()
-            {
-                Name = Guid.NewGuid().ToString(),
-                Price = existingItem.Price + 5
-            };
+            var itemToUpdate = new UpdateItemDto
+            (
+                Guid.NewGuid().ToString(),
+                Guid.NewGuid().ToString(),
+                existingItem.Price + 5
+            );
 
             var controller = new ItemsController(repositoryStub.Object, loggerStub.Object);
 

@@ -1,8 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Catalog.Api.DTOs;
+using Catalog.Api.Dtos;
 using Catalog.Api.Entities;
 using Catalog.Api.Repositories;
 using Microsoft.AspNetCore.Mvc;
@@ -43,12 +42,13 @@ namespace Catalog.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateItemAsync(CreateItemDTO itemDTO)
+        public async Task<IActionResult> CreateItemAsync(CreateItemDto itemDTO)
         {
             Item item = new()
             {
                 Id = Guid.NewGuid(),
                 Name = itemDTO.Name,
+                Description = itemDTO.Description,
                 Price = itemDTO.Price,
                 CreatedDate = DateTimeOffset.UtcNow
             };
@@ -58,20 +58,18 @@ namespace Catalog.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateItemAsync(Guid id, UpdateItemDTO itemDTO)
+        public async Task<IActionResult> UpdateItemAsync(Guid id, UpdateItemDto itemDTO)
         {
             var existingItem = await repository.GetItemAsync(id);
 
             if (existingItem is null)
                 return NotFound();
 
-            Item updatedItem = existingItem with
-            {
-                Name = itemDTO.Name,
-                Price = itemDTO.Price
-            };
+            existingItem.Name = itemDTO.Name;
+            existingItem.Description = itemDTO.Description;
+            existingItem.Price = itemDTO.Price;
 
-            await repository.UpdateItemAsync(updatedItem);
+            await repository.UpdateItemAsync(existingItem);
             return NoContent();
         }
 
