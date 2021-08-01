@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Catalog.Api.Dtos;
@@ -28,6 +29,18 @@ namespace Catalog.Api.Controllers
             var items = (await repository.GetItemsAsync()).Select(item => item.AsDTO());
             logger.LogInformation($"{DateTime.UtcNow.ToString()}: Retrieved {items.Count()} items");
             return Ok(items);
+        }
+
+        [HttpGet]
+        public async Task<IEnumerable<ItemDto>> GetItemsAsync(string name = null)
+        {
+            var items = (await repository.GetItemsAsync()).Select(item => item.AsDTO());
+
+            if (!string.IsNullOrWhiteSpace(name)) 
+                items = items.Where(item => item.Name.Contains(name, StringComparison.OrdinalIgnoreCase));
+
+            logger.LogInformation($"{DateTime.UtcNow.ToString()}: Retrieved {items.Count()} items");
+            return items;
         }
 
         [HttpGet("{id}")]
